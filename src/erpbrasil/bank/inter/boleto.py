@@ -27,16 +27,19 @@ class BoletoInter:
         self._identifier = identifier
         self._instructions = instructions or []
 
-        self.mora = mora or dict(
-            codigoMora="ISENTO",
-            valor=0,
-            taxa=0
-        )
-        self.multa = multa or dict(
-            codigoMulta="NAOTEMMULTA",
-            valor=0,
-            taxa=0
-        )
+        #self.mora = mora or dict(
+        #    codigoMora="ISENTO",
+        #    valor=0,
+        #    taxa=0
+        #)
+        #self.mora = dict(
+        #    taxa=mora or 0,
+        #    codigo="TAXAMENSAL",
+        #)
+        #self.multa = dict(
+        #    taxa=multa or 0,
+        #    codigo="PERCENTUAL",
+        #)
         self.discount1 = discount1 or dict(
             codigoDesconto="NAOTEMDESCONTO",
             taxa=0,
@@ -57,42 +60,66 @@ class BoletoInter:
         )
 
     def _emissao_data(self):
+        tipo_pessoa = "FISICA"
+        if len(self._payer.identifier) > 11:
+            tipo_pessoa = "JURIDICA"
         data = {
             "seuNumero": self._identifier[:15],
             "valorNominal": self._amount,
+            "valorAbatimento": 0,
             "dataVencimento": self._due_date,
             "numDiasAgenda": 30,
+            "atualizarPagador": "false",
             "pagador": {
                 "cpfCnpj": self._payer.identifier,
+                "tipoPessoa": tipo_pessoa,
                 "nome": self._payer.name,
-                # "email": self._payer.email,
-                # "telefone": self._payer.phone[2:],
-                "cep": self._payer.address.zipCode,
-                "numero": self._payer.address.streetLine2,
-                # "complemento": self._payer.address.streetLine2,
-                "bairro": self._payer.address.district,
+                "endereco": self._payer.address.streetLine1,
                 "cidade": self._payer.address.city,
                 "uf": self._payer.address.stateCode,
-                "endereco": self._payer.address.streetLine1,
-                # "ddd": self._payer.phone[:2],
-                "tipoPessoa": "JURIDICA",
+                "cep": self._payer.address.zipCode,
+                "email": "", #self._payer.email,
+                "ddd": "", #self._payer.phone[:2],
+                "telefone": "", #self._payer.phone[2:],
+                "numero": self._payer.address.streetLine2,
+                "complemento": "",
+                "bairro": self._payer.address.district,
             },
-            "desconto1": self.discount1,
-            "desconto2": self.discount2,
-            "desconto3": self.discount3,
-            "multa": self.multa,
-            "mora": self.mora,
+            "desconto1": {
+                "codigoDesconto": "PERCENTUALDATAINFORMADA",
+                "taxa": 4,
+                "valor": self.discount1,
+                "data": self._due_date
+            },
+            "desconto2": {
+                "codigoDesconto": "PERCENTUALDATAINFORMADA",
+                "taxa": 4,
+                "valor": self.discount2,
+                "data": self._due_date
+            },
+            "desconto3": {
+                "codigoDesconto": "PERCENTUALDATAINFORMADA",
+                "taxa": 4,
+                "valor": self.discount3,
+                "data": self._due_date
+            },
             "beneficiarioFinal": {
-                "nome": self._sender.name,
                 "cpfCnpj": self._sender.identifier,
-                "cep": self._sender.address.zipCode,
+                "tipoPessoa": "JURIDICA",
+                "nome": self._sender.name,
                 "endereco": self._sender.address.streetLine1,
                 "bairro": self._sender.address.district,
                 "cidade": self._sender.address.city,
                 "uf": self._sender.address.stateCode,
-                "tipoPessoa": "JURIDICA",
+                "cep": self._sender.address.zipCode,
             }
         }
+        #    "multa": self.multa,
+        #    "mora": self.mora,
+        #    "multa": {
+        #        "taxa": self.multa or 0,
+        #        "codigo": "PERCENTUAL"
+        #    },
 
         if self._instructions:
             data['mensagem'] = {'linha{}'.format(k + 1): v for k, v in enumerate(self._instructions)}
